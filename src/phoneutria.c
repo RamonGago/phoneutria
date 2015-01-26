@@ -1,3 +1,16 @@
+/*
+This file is part of Phoneutria package.
+Writen by (alphabetic order)
+- Danilo Cantarella (https://github.com/Flyer-90);
+- Roberta Maccarrone (https://github.com/diarbuse);
+- Cristina Parasiliti Parracello (https://github.com/CryPara);
+- Filippo Randazzo (https://github.com/filirnd);
+- Dario Safarally (https://github.com/stormspeed);
+- Sebastiano Siragusa (https://github.com/sebysira);
+- Federico Vindigni (https://github.com/federicovindigni);
+Full Phoenutria is released by GPL3 licence.
+*/
+
 #include "phoneutria.h"
 
 char *get_ip_addr(char *_host_name, char *_ip_addr)				/*obtain IP address from domain*/
@@ -54,17 +67,27 @@ int get_page(char *_seed, char *_query)
 	url_info_t *url_info;
 	site_node_t *site_queue;
 	int i;
+	int page_depth;
 	
 	url_info = malloc(sizeof(url_info_t));						/*allocate memory for struct url_info*/
 
 	site_queue = NULL;											/*init queue to store urls*/
 	
 	get_url_info(_seed, url_info);								/*call function to get url's information*/
-	add_url(&site_queue, _seed, url_info->host_name);			/*call function to add url into queue*/
+	is_known_page(_seed);
+	add_url(&site_queue, _seed, url_info->host_name, 0);		/*call function to add url into queue*/
+	get_url_info(_seed, url_info);
+	strcpy(seed_host, url_info->host_name);
 	
 	while(site_queue != NULL)									/*while there are urls in queue*/
 	{
-		url = get_url(&site_queue);								/*get url from queue*/
+		url = get_url(&site_queue, &page_depth);				/*get url from queue*/
+		if(url == NULL)
+		{
+			free(url_info);
+			return 0;
+		}
+
 		if(!get_url_info(url, url_info))
 			continue;
 		free(url);
@@ -79,7 +102,7 @@ int get_page(char *_seed, char *_query)
 		memset(request, '\0', 1024);							/*init request's memory*/
 		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);	/*prepare request string*/
 		write(sock, request, 1024);								/*write request in socket*/
-		parse_page(sock, &site_queue, url_info->host_name, _query);			/*parse result from socket*/
+		parse_page(sock, &site_queue, url_info->host_name, _query, page_depth);							/*parse result from socket*/
 		close(sock);											/*close socket*/
 	}
 	
@@ -96,3 +119,16 @@ int main(int argc, char **argv)
 		
 	exit(0);
 }
+
+/*
+This file is part of Phoneutria package.
+Writen by (alphabetic order)
+- Danilo Cantarella (https://github.com/Flyer-90);
+- Roberta Maccarrone (https://github.com/diarbuse);
+- Cristina Parasiliti Parracello (https://github.com/CryPara);
+- Filippo Randazzo (https://github.com/filirnd);
+- Dario Safarally (https://github.com/stormspeed);
+- Sebastiano Siragusa (https://github.com/sebysira);
+- Federico Vindigni (https://github.com/federicovindigni);
+Full Phoenutria is released by GPL3 licence.
+*/
