@@ -87,36 +87,6 @@ char *get_url(site_node_t **_site_queue, int *_depth)
 	return url;
 }
 
-/*int add_url_dfs(url_node_t **_top, char *_url)
-{
-	url_node_t *new_node;
-	
-	new_node = malloc(sizeof(url_node_t));
-	new_node->url = strdup(_url);
-	new_node->next_url = *_top;
-	*_top = new_node;
-	
-	return 0;
-}
-
-char *get_url_dfs(url_node_t **_top)
-{
-	url_node_t *aux;
-	char *url;
-	
-	aux = *_top;
-	*_top = (*_top)->next_url;
-	url = aux->url;
-	free(aux);
-	
-	return url;
-}
-
-int add_url_sdfs(url_queue_t **_top, char *_url, char *_seed)
-{
-	return 0;
-}*/
-
 void free_queue(site_node_t *_top)
 {
 	site_node_t *aux1;

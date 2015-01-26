@@ -115,49 +115,16 @@ int get_page(char *_seed, char **_query, int _num_query)
 int main(int argc, char **argv)
 {
 	char **query_words;
-	
+
+	if( argc < 3){
+		printf("Error: too few arguments!\n");
+		return 0;
+	}
+	mkdir("output/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);	/*create folder for output file*/
+
 	init_hash_table();											/*init hash table for collision avoidance*/
 	query_words = &argv[2];
  	get_page(argv[1], query_words, argc - 2);					/*call function to start download and search process*/
-	
-	/*url_info_t *url_info = malloc(sizeof(url_info_t));
-	char *subd;
-	int i;
-	
-	get_url_info(argv[1], url_info);
-	
-	i = 0;
-	while((subd = url_info->subdomain[i]))
-	{
-		printf("%s\n", subd);
-		i++;
-	}*/
-	
-	/*url_info_t *url_info = malloc(sizeof(url_info_t));
-
-	if(!get_url_info(argv[1], url_info))
-	{
-		printf("%s is not an url!\n", argv[1]);
-		exit(1);
-	}
-
-	
-	printf("Host name: %s\n", url_info->host_name);
-	
-	if(strlen(url_info->path) == 0)
-		printf("File path: none\n");
-	else
-		printf("File path: %s\n", url_info->path);
-	
-	if(strlen(url_info->file_ext) == 0)
-		printf("File extension: none\n");
-	else
-		printf("File extension: %s\n", url_info->file_ext);
-
-	if(file_ext_is_good(url_info->file_ext))
-		printf("Valid extension\n");
-	else
-		printf("Invalid extension\n");*/
 
 	exit(0);
 }

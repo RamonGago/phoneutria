@@ -210,19 +210,17 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	int is_href;
 	int is_query;
 	int index[_num_query];
-	//int query_len;
 	int i, j;
 	FILE *page;
 	char path[1000];
 
 	memset(path, '\0', 1000);							/*init path's memory*/
-	sprintf(path, "dump/%d", file_index++);	/*set output's path*/
+	sprintf(path, "output/%d", file_index++);			/*set output's path*/
 	page = fopen(path, "w");							/*open page's file in write mode*/
 	
 	for(i = 0; i < _num_query; i++)
 		index[i] = 0;
-	
-	//query_len = strlen(_query);
+
 	is_http = is_https = is_href = is_query = i = 0;
 	while(read(_sock, &read_char, 1) > 0)				/*read from socket 1 character at time*/
 	{
@@ -231,7 +229,7 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 
 		for(j = 0; j < _num_query; j++)
 		{
-			//printf("%s %d\n", _query[j], _num_query);
+
 			if(c == _query[j][index[j]])				/*check if query word is contained in page*/
 				index[j]++;
 			else
