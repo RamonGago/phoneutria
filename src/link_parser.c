@@ -8,8 +8,10 @@
  * Faccio un hashing a a dizionario.
  */
 
+int max_depth = 2;
 int file_index = 0;
-//int dept = 1;
+char seed_host[URL_MAX_LEN];
+
 page_node_t *known_pages[HASH_SIZE];
 
 url_info_t *get_url_info(char *_url, url_info_t *_url_info)
@@ -138,9 +140,6 @@ page_node_t *create_node(char *_url, page_node_t *_next)
 	node = malloc(sizeof(page_node_t));
 	node->url = strdup(_url);
 	node->next = _next;
-
-	//table_size += sizeof(page_node_t) + strlen(node->url) * sizeof(char);
-	printf("spotted url: %s\n", _url);
 	
 	return node;
 }
@@ -211,11 +210,12 @@ int file_ext_is_good(char *_file_ext)
 		return 0;
 }
 
-int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_query)
+int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_query, int _page_depth)
 {
 	char read_char;
 	char c;
 	int is_http;
+	int is_https;
 	int is_href;
 	int is_query;
 	int query_len;
@@ -224,11 +224,11 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_qu
 	char path[1000];
 	
 	memset(path, '\0', 1000);
-	sprintf(path, "dump_test/dump/%d", file_index++);
+	sprintf(path, "dump/%d", file_index++);
 	page = fopen(path, "w");
 	
 	query_len = strlen(_query);
-	is_http = is_href = is_query = i = 0;
+	is_http = is_https = is_href = is_query = i = 0;
 	while(read(_sock, &read_char, 1) > 0)
 	{
 		c = tolower(read_char);
@@ -251,9 +251,22 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_qu
 			(c == '/' && is_http == 5))
 			is_http++;
 		else if(c == '/' && is_http == 6)
-			spot_url(_sock, _site_queue, page, NULL);
+			spot_url(_sock, _site_queue, page, NULL, _page_depth);
 		else
 			is_http = 0;
+		
+		if((c == 'h' && is_https == 0) ||
+			(c == 't' && is_https == 1) ||
+			(c == 't' && is_https == 2) ||
+			(c == 'p' && is_https == 3) ||
+			(c == 's' && is_https == 4) ||
+			(c == ':' && is_https == 5) ||
+			(c == '/' && is_https == 6))
+			is_https++;
+		else if(c == '/' && is_https == 7)
+			spot_url(_sock, _site_queue, page, NULL, _page_depth);
+		else
+			is_https = 0;
 		
 		if((c == 'h' && is_href == 0) ||
 			(c == 'r' && is_href == 1) ||
@@ -263,19 +276,19 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_qu
 			(c == '"' && is_href == 5) )
 			is_href++;
 		else if(c == '/' && is_href == 6)
-			spot_url(_sock, _site_queue, page, _host_name);
+			spot_url(_sock, _site_queue, page, _host_name, _page_depth);
 		else
 			is_href = 0;
 	}
 	fclose(page);
 	
-	if(!is_query)
-		remove(path);
+	/*if(!is_query)
+		remove(path);*/
 	
 	return 0;
 }
 
-int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name)
+int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name, int _page_depth)
 {
 	int i;
 	char c;
@@ -319,7 +332,10 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name)
 			{
 				if(!is_known_page(url))
 				{
-					add_url(_site_queue, url, url_info.host_name);
+					if(strcmp(seed_host, url_info.host_name) != 0 && (_page_depth + 1) <= max_depth)
+						add_url(_site_queue, url, url_info.host_name, _page_depth + 1);
+					else if(strcmp(seed_host, url_info.host_name) == 0)
+						add_url(_site_queue, url, url_info.host_name, _page_depth);
 				}
 				has_domain = 0;
 			}

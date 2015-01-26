@@ -54,17 +54,26 @@ int get_page(char *_seed, char *_query)
 	url_info_t *url_info;
 	site_node_t *site_queue;
 	int i;
+	int page_depth;
 	
 	url_info = malloc(sizeof(url_info_t));
 
 	site_queue = NULL;
 	
 	get_url_info(_seed, url_info);
-	add_url(&site_queue, _seed, url_info->host_name);
+	/***/is_known_page(_seed);
+	add_url(&site_queue, _seed, url_info->host_name, 0);
+	get_url_info(_seed, url_info);
+	strcpy(seed_host, url_info->host_name);
 	
 	while(site_queue != NULL)
 	{
-		url = get_url(&site_queue);
+		url = get_url(&site_queue, &page_depth);
+		if(url == NULL)
+		{
+			free(url_info);
+			return 0;
+		}
 		if(!get_url_info(url, url_info))
 			continue;
 		free(url);
@@ -75,15 +84,13 @@ int get_page(char *_seed, char *_query)
 		
 		if(sock < 0)
 			continue;
-
 		memset(request, '\0', 1024);
 		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);
 		write(sock, request, 1024);
-		parse_page(sock, &site_queue, url_info->host_name, _query);
+		parse_page(sock, &site_queue, url_info->host_name, _query, page_depth);
+		//print_queue(site_queue);
 		close(sock);
 	}
-
-	//print_queue(site_queue);
 		
 	free(url_info);
 	free_queue(site_queue);

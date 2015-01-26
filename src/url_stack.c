@@ -1,6 +1,6 @@
 #include "url_stack.h"
 
-int add_url(site_node_t **_top, char *_url, char *_site_name)
+int add_url(site_node_t **_top, char *_url, char *_site_name, int _depth)
 {
 	url_node_t *new_url;
 	site_node_t *new_site;
@@ -35,6 +35,7 @@ int add_url(site_node_t **_top, char *_url, char *_site_name)
 		new_site->site_name = strdup(_site_name);
 		new_site->next_site = NULL;
 		new_site->url_stack = new_url;
+		new_site->depth = _depth;
 		/*il primo inserimento è ovviamente a parte (poiché aggiorna il 
 		  puntatore all'intera struttura)*/
 		if(prev)
@@ -42,13 +43,13 @@ int add_url(site_node_t **_top, char *_url, char *_site_name)
 		else
 			*_top = new_site;
 	}
-	
-	//printf("Found: %s\n", _url);
+
+	printf("spotted url: %s at depth: %d\n", _url, _depth);
 	
 	return 0;
 }
 
-char *get_url(site_node_t **_site_queue)
+char *get_url(site_node_t **_site_queue, int *_depth)
 {
 	site_node_t *aux1;
 	url_node_t *aux2;
@@ -61,28 +62,30 @@ char *get_url(site_node_t **_site_queue)
 	
 	/*se il primo site_node della coda ha lo stack degli url vuoto, allora 
 	  seleziono il successivo (se non esiste ho finito tutti i link da visitare)*/
-	if(!(*_site_queue)->url_stack)
+	if((*_site_queue)->url_stack == NULL)
 	{
 		aux1 = *_site_queue;
 		*_site_queue = (*_site_queue)->next_site;
 		free(aux1->site_name);
 		free(aux1);
-		if(!_site_queue)
+		if(!(*_site_queue))
 			return NULL;
 	}
-	
+
 	aux2 = (*_site_queue)->url_stack;
 	(*_site_queue)->url_stack = (*_site_queue)->url_stack->next_url;
 	
 	url = aux2->url;
+	*_depth = (*_site_queue)->depth;
 	free(aux2);
 	
 	printf("Parsing: %s\n", url);
+
 	
 	return url;
 }
 
-int add_url_dfs(url_node_t **_top, char *_url)
+/*int add_url_dfs(url_node_t **_top, char *_url)
 {
 	url_node_t *new_node;
 	
@@ -110,7 +113,7 @@ char *get_url_dfs(url_node_t **_top)
 int add_url_sdfs(url_queue_t **_top, char *_url, char *_seed)
 {
 	return 0;
-}
+}*/
 
 void free_queue(site_node_t *_top)
 {
@@ -141,7 +144,7 @@ int print_queue(site_node_t *_site_queue)
 	{
 		aux = _site_queue->url_stack;
 		printf("\n\n*****************************\n");
-		printf("%s\n\n", _site_queue->site_name);
+		printf("%s %d\n\n", _site_queue->site_name, _site_queue->depth);
 		while(aux)
 		{
 			printf("\t%s\n", aux->url);
