@@ -210,7 +210,7 @@ int file_ext_is_good(char *_file_ext)
 		return 0;
 }
 
-int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_query, int _page_depth)
+int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_query, int _num_query, int _page_depth)
 {
 	char read_char;
 	char c;
@@ -218,8 +218,9 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_qu
 	int is_https;
 	int is_href;
 	int is_query;
-	int query_len;
-	int i;
+	int index[_num_query];
+	//int query_len;
+	int i, j;
 	FILE *page;
 	char path[1000];
 	
@@ -227,7 +228,10 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_qu
 	sprintf(path, "dump/%d", file_index++);
 	page = fopen(path, "w");
 	
-	query_len = strlen(_query);
+	for(i = 0; i < _num_query; i++)
+		index[i] = 0;
+	
+	//query_len = strlen(_query);
 	is_http = is_https = is_href = is_query = i = 0;
 	while(read(_sock, &read_char, 1) > 0)
 	{
@@ -235,13 +239,16 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_qu
 		fputc(c, page);
 		
 		/*mi sembra normale il fatto che la query non sia cercata negli url*/
-		
-		if(c == _query[i])
-			i++;
-		else
-			i = 0;
-		if(i == query_len)
-			is_query++;
+		for(j = 0; j < _num_query; j++)
+		{
+			//printf("%s %d\n", _query[j], _num_query);
+			if(c == _query[j][index[j]])
+				index[j]++;
+			else
+				index[j] = 0;
+			if(index[j] == strlen(_query[j]))
+				is_query++;
+		}
 		
 		if((c == 'h' && is_http == 0) ||
 			(c == 't' && is_http == 1) ||
@@ -282,8 +289,8 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_qu
 	}
 	fclose(page);
 	
-	/*if(!is_query)
-		remove(path);*/
+	if(!is_query)
+		remove(path);
 	
 	return 0;
 }

@@ -39,7 +39,7 @@ typedef struct page_node_t
 void init_hash_table();
 int is_known_page(char *_url);
 page_node_t *create_node(char *_url, page_node_t *_next);
-int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char *_query, int _page_depth);
+int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_query, int _num_query, int _page_depth);
 int file_ext_is_good(char *_file_ext);
 int get_hash(char *_url);
 url_info_t *get_url_info(char *_url, url_info_t *_url_info);

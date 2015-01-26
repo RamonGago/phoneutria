@@ -46,7 +46,7 @@ int create_socket(char *_host_name)
 	return sock;
 }
 
-int get_page(char *_seed, char *_query)
+int get_page(char *_seed, char **_query, int _num_query)
 {
 	int sock;
 	char request[1024];
@@ -87,7 +87,7 @@ int get_page(char *_seed, char *_query)
 		memset(request, '\0', 1024);
 		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);
 		write(sock, request, 1024);
-		parse_page(sock, &site_queue, url_info->host_name, _query, page_depth);
+		parse_page(sock, &site_queue, url_info->host_name, _query, _num_query, page_depth);
 		//print_queue(site_queue);
 		close(sock);
 	}
@@ -100,13 +100,11 @@ int get_page(char *_seed, char *_query)
 
 int main(int argc, char **argv)
 {
-	/*FILE *f;
-	
-	f = fopen("dump_test/dump", "w");
-	fclose(f);*/
+	char **query_words;
 	
 	init_hash_table();
- 	get_page(argv[1], argv[2]);
+	query_words = &argv[2];
+ 	get_page(argv[1], query_words, argc - 2);
 	
 	/*url_info_t *url_info = malloc(sizeof(url_info_t));
 	char *subd;

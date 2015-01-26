@@ -19,6 +19,6 @@ extern int h_errno; //needed by gethostbyname
 
 char *get_ip_addr(char *_host_name, char *_ip_addr);
 int create_socket(char *_host_name);
-int get_page(char *_seed, char *_query);
+int get_page(char *_seed, char **_query, int _num_query);
 
 #endif
