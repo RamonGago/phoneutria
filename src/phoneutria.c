@@ -1,6 +1,6 @@
 #include "phoneutria.h"
 
-char *get_ip_addr(char *_host_name, char *_ip_addr)
+char *get_ip_addr(char *_host_name, char *_ip_addr)				/*obtain IP address from domain*/
 {
   struct hostent *host_info;
     
@@ -13,7 +13,7 @@ char *get_ip_addr(char *_host_name, char *_ip_addr)
   return _ip_addr;
 }
 
-int create_socket(char *_host_name)
+int create_socket(char *_host_name)								/*create socket for connection*/
 {
 	char *server_ip;
 	int sock;
@@ -25,7 +25,7 @@ int create_socket(char *_host_name)
 		printf("Error while creating the socket	\n");
 		exit(1);
 	}
-	server_addr.sin_family = AF_INET;
+	server_addr.sin_family = AF_INET;							/*set IP's parameters*/
 	server_ip = malloc(sizeof(char) * (IPV4_ADDR_LEN + 1));
 	if(get_ip_addr(_host_name, server_ip) == NULL)
 	{
@@ -33,8 +33,8 @@ int create_socket(char *_host_name)
 		return -1;
 	}
 	inet_aton(server_ip, &server_addr.sin_addr);
-	server_addr.sin_port = htons(80);
-	retcode = connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
+	server_addr.sin_port = htons(80);							/*set port*/
+	retcode = connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));		/*connect to address*/
 	if(retcode == -1)
 	{
 		printf("Error while connecting to %s\n", server_ip);
@@ -55,36 +55,34 @@ int get_page(char *_seed, char *_query)
 	site_node_t *site_queue;
 	int i;
 	
-	url_info = malloc(sizeof(url_info_t));
+	url_info = malloc(sizeof(url_info_t));						/*allocate memory for struct url_info*/
 
-	site_queue = NULL;
+	site_queue = NULL;											/*init queue to store urls*/
 	
-	get_url_info(_seed, url_info);
-	add_url(&site_queue, _seed, url_info->host_name);
+	get_url_info(_seed, url_info);								/*call function to get url's information*/
+	add_url(&site_queue, _seed, url_info->host_name);			/*call function to add url into queue*/
 	
-	while(site_queue != NULL)
+	while(site_queue != NULL)									/*while there are urls in queue*/
 	{
-		url = get_url(&site_queue);
+		url = get_url(&site_queue);								/*get url from queue*/
 		if(!get_url_info(url, url_info))
 			continue;
 		free(url);
 		
-		i = 0;
+		i = 0;													/*create socket for subdomain*/
 		while(url_info->subdomain[i] != NULL && (sock = create_socket(url_info->subdomain[i])) < 0)
 			i++;
 		
 		if(sock < 0)
 			continue;
 
-		memset(request, '\0', 1024);
-		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);
-		write(sock, request, 1024);
-		parse_page(sock, &site_queue, url_info->host_name, _query);
-		close(sock);
+		memset(request, '\0', 1024);							/*init request's memory*/
+		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);	/*prepare request string*/
+		write(sock, request, 1024);								/*write request in socket*/
+		parse_page(sock, &site_queue, url_info->host_name, _query);			/*parse result from socket*/
+		close(sock);											/*close socket*/
 	}
-
-	//print_queue(site_queue);
-		
+	
 	free(url_info);
 	free_queue(site_queue);
 	
@@ -93,52 +91,8 @@ int get_page(char *_seed, char *_query)
 
 int main(int argc, char **argv)
 {
-	/*FILE *f;
-	
-	f = fopen("dump_test/dump", "w");
-	fclose(f);*/
-	
-	init_hash_table();
- 	get_page(argv[1], argv[2]);
-	
-	/*url_info_t *url_info = malloc(sizeof(url_info_t));
-	char *subd;
-	int i;
-	
-	get_url_info(argv[1], url_info);
-	
-	i = 0;
-	while((subd = url_info->subdomain[i]))
-	{
-		printf("%s\n", subd);
-		i++;
-	}*/
-	
-	/*url_info_t *url_info = malloc(sizeof(url_info_t));
-
-	if(!get_url_info(argv[1], url_info))
-	{
-		printf("%s is not an url!\n", argv[1]);
-		exit(1);
-	}
-
-	
-	printf("Host name: %s\n", url_info->host_name);
-	
-	if(strlen(url_info->path) == 0)
-		printf("File path: none\n");
-	else
-		printf("File path: %s\n", url_info->path);
-	
-	if(strlen(url_info->file_ext) == 0)
-		printf("File extension: none\n");
-	else
-		printf("File extension: %s\n", url_info->file_ext);
-
-	if(file_ext_is_good(url_info->file_ext))
-		printf("Valid extension\n");
-	else
-		printf("Invalid extension\n");*/
-	
+	init_hash_table();											/*init hash table for collision avoidance*/
+ 	get_page(argv[1], argv[2]);									/*call function to start download and search process*/
+		
 	exit(0);
 }

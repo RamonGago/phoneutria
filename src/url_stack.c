@@ -11,39 +11,31 @@ int add_url(site_node_t **_top, char *_url, char *_site_name)
 	new_url->url = strdup(_url);
 	new_url->next_url = NULL;
 	
-	/*cerco in quale sito (stack) inserire il nuovo url (nodo)*/
 	aux = *_top;
 	prev = NULL;
-	while(aux != NULL && strcmp(_site_name, aux->site_name) != 0)
+	while(aux != NULL && strcmp(_site_name, aux->site_name) != 0)		/*search site's stack to insert new url*/
 	{
 		prev = aux;
 		aux = aux->next_site;
 	}
 	
-	/*se aux non è nullo allora devo aggiornare url_stack del site_node 
-	  a cui l'url appartiene.*/
-	if(aux)
+	if(aux)																/*if aux is not null, insert new url in stack*/
 	{
 		new_url->next_url = aux->url_stack;
 		aux->url_stack = new_url;
 	}
 
-	/*se aux è nullo (ossia se il sito a cui l'url appartiene non ha un 
-	  suo stack) allora devo creare il site node (ricordo che site node è una coda).*/
-	else {
+	else {																/*if aux is null, create new stack to insert new url*/
 		new_site = malloc(sizeof(site_node_t));
 		new_site->site_name = strdup(_site_name);
 		new_site->next_site = NULL;
 		new_site->url_stack = new_url;
-		/*il primo inserimento è ovviamente a parte (poiché aggiorna il 
-		  puntatore all'intera struttura)*/
-		if(prev)
+		if(prev)														/*if stack is empty*/
 			prev->next_site = new_site;
 		else
 			*_top = new_site;
 	}
-	
-	//printf("Found: %s\n", _url);
+
 	
 	return 0;
 }
@@ -53,21 +45,15 @@ char *get_url(site_node_t **_site_queue)
 	site_node_t *aux1;
 	url_node_t *aux2;
 	char *url;
-	
-	/*un nodo della site queue non viene eliminato quando l'ultimo url del suo 
-	  stack viene estratto. L'eliminazione avverà alla get successiva. Questo 
-	  perché quell'ultima pagina estratta potrebbe contenere altri link allo 
-	  stesso sito.*/
-	
-	/*se il primo site_node della coda ha lo stack degli url vuoto, allora 
-	  seleziono il successivo (se non esiste ho finito tutti i link da visitare)*/
-	if(!(*_site_queue)->url_stack)
+
+	/*a node can be delete from his stack only if there aren't other urla in this stack*/
+	if(!(*_site_queue)->url_stack)										/*check if url_stack is not null*/								
 	{
 		aux1 = *_site_queue;
-		*_site_queue = (*_site_queue)->next_site;
+		*_site_queue = (*_site_queue)->next_site;						/*go to next node*/
 		free(aux1->site_name);
 		free(aux1);
-		if(!_site_queue)
+		if(!_site_queue)												
 			return NULL;
 	}
 	
@@ -82,7 +68,7 @@ char *get_url(site_node_t **_site_queue)
 	return url;
 }
 
-int add_url_dfs(url_node_t **_top, char *_url)
+/*int add_url_dfs(url_node_t **_top, char *_url)
 {
 	url_node_t *new_node;
 	
@@ -110,7 +96,7 @@ char *get_url_dfs(url_node_t **_top)
 int add_url_sdfs(url_queue_t **_top, char *_url, char *_seed)
 {
 	return 0;
-}
+}*/
 
 void free_queue(site_node_t *_top)
 {
@@ -155,30 +141,3 @@ int print_queue(site_node_t *_site_queue)
 	return 0;
 }
 
-/*int main()
-{
-	site_node_t *site_queue = NULL;
-	char *c;
-
-	//printf("main: %p\n", site_queue);
-	add_url(&site_queue, "www.unict.it/pag1", "www.unict.it");
-	//printf("main: %p\n", site_queue);
-	add_url(&site_queue, "www.google.it/gog1", "www.google.it");
-	add_url(&site_queue, "www.google.it/gog2", "www.google.it");
-	add_url(&site_queue, "facebook.com/fb1", "facebook.com");
-	add_url(&site_queue, "www.unict.it/pag2", "www.unict.it");
-	add_url(&site_queue, "facebook.com/fb2", "facebook.com");
-	add_url(&site_queue, "facebook.com/fb3", "facebook.com");
-
-	print_queue(site_queue);
-	free(get_url(&site_queue));
-	print_queue(site_queue);
-	free(get_url(&site_queue));
-	print_queue(site_queue);
-	free(get_url(&site_queue));
-	print_queue(site_queue);
-	
-	free_queue(site_queue);
-	
-	exit(0);
-}*/

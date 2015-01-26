@@ -27,9 +27,9 @@ typedef struct site_node_t
 	struct site_node_t *next_site;
 } site_node_t;
 
-int add_url(site_node_t **_site_queue, char *_url, char *_site_name);
-char *get_url(site_node_t **_site_queue);
-void free_queue(site_node_t *_site_queue);
-int print_queue(site_node_t *_site_queue);
+int add_url(site_node_t **_site_queue, char *_url, char *_site_name);					/*insert url in queue*/
+char *get_url(site_node_t **_site_queue);												/*get url from queue*/
+void free_queue(site_node_t *_site_queue);												/*delete url from queue*/
+int print_queue(site_node_t *_site_queue);												
 
 #endif
