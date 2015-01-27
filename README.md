@@ -12,7 +12,8 @@ Download source and compile it with make file
 
 ###How start
 Start crawler is very simple:
-        ./phoneutria www.urlseed.com  keyword1 keyword2 ....
+
+        ./phoneutria www.urlseed.com  keyword1 keyword2 ..
   
   
   
