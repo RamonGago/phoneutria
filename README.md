@@ -1,9 +1,9 @@
 # Phoneutria
-## Web Crawler write in C
+## Web Crawler written in C
 
 ###What is Phoneutria
 
-Phounetria is a web crawler write in C that take in input an URL seed and keywords, scan seed and other URLs founded and save pages (or files) that contain input keywords.
+Phounetria is a web crawler written in C that take in input an URL seed and keywords, scan seed and other URLs founded and save pages (or files) that contain input keywords.
 
 
 ###Installation & configuration
