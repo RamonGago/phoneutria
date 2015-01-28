@@ -13,7 +13,7 @@ Full Phoenutria is released by GPL3 licence.
 
 #include "link_parser.h"
 
-int max_depth = 2;
+int max_depth = 1;
 int file_index = 0;
 char seed_host[URL_MAX_LEN];
 
@@ -215,7 +215,7 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	char path[1000];
 
 	memset(path, '\0', 1000);							/*init path's memory*/
-	sprintf(path, "output/%d", file_index++);			/*set output's path*/
+	sprintf(path, "output/%d.txt", file_index++);			/*set output's path*/
 	page = fopen(path, "w");							/*open page's file in write mode*/
 	
 	for(i = 0; i < _num_query; i++)
