@@ -12,7 +12,9 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 #include "url_stack.h"
+
 
 #define URL_MAX_LEN 4096
 

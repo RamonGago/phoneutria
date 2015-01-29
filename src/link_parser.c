@@ -220,13 +220,20 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	int is_href;
 	int is_query;
 	int index[_num_query];
-	//int query_len;
 	int i, j;
 	FILE *page;
 	char path[1000];
+	DIR *dir;
+	
 	
 	memset(path, '\0', 1000);
-	sprintf(path, "dump/%d", file_index++);
+	if(!(dir = opendir("output")))
+		mkdir("output", S_IRWXU | S_IRWXG | S_IRWXO);
+	else 
+		closedir(dir);
+	
+	
+	sprintf(path, "output/%d.txt", file_index++);
 	page = fopen(path, "w");
 	
 	for(i = 0; i < _num_query; i++)
