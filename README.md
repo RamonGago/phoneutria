@@ -3,7 +3,7 @@
 
 ###What is Phoneutria
 
-Phounetria is a web crawler written in C that take in input an URL seed and keywords, scan seed and other URLs founded and save pages (or files) that contain input keywords.
+Phounetria is a web crawler written in C that take in input one or more URL seeds, keywords and depth, scan seed and other URLs founded and save pages (or files) that contain input keywords.
 
 
 ###Installation & configuration
@@ -11,11 +11,11 @@ Download source and compile it with make file
 
 
 ###How start
-Start crawler is very simple:
+Start crawler is very simple ( SEED = url string , DEPTH = int , KEYWORD = string ) :
 
-        ./phoneutria url_seed  keyword1 keyword2 ..
+        ./phoneutria SEED1 [SEED2 SEED3 .. ] -d DEPTH KEYWORD1 [KEYWORD2 KEYWORD3 .. ]
   
-  
+ 
   
 ###Credits
 Have participated at project (Alphabetical Order):
