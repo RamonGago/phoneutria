@@ -1,16 +1,3 @@
-/*
-This file is part of Phoneutria package.
-Writen by (alphabetic order)
-- Danilo Cantarella (https://github.com/Flyer-90);
-- Roberta Maccarrone (https://github.com/diarbuse);
-- Cristina Parasiliti Parracello (https://github.com/CryPara);
-- Filippo Randazzo (https://github.com/filirnd);
-- Dario Safarally (https://github.com/stormspeed);
-- Sebastiano Siragusa (https://github.com/sebysira);
-- Federico Vindigni (https://github.com/federicovindigni);
-Full Phoenutria is released by GPL3 licence.
-*/
-
 #include "url_stack.h"
 
 int add_url(site_node_t **_top, char *_url, char *_site_name, int _depth)
@@ -24,28 +11,33 @@ int add_url(site_node_t **_top, char *_url, char *_site_name, int _depth)
 	new_url->url = strdup(_url);
 	new_url->next_url = NULL;
 	
+	/*cerco in quale sito (stack) inserire il nuovo url (nodo)*/
 	aux = *_top;
 	prev = NULL;
-	while(aux != NULL && strcmp(_site_name, aux->site_name) != 0)		/*search site's stack to insert new url*/
+	while(aux != NULL && strcmp(_site_name, aux->site_name) != 0)
 	{
 		prev = aux;
 		aux = aux->next_site;
 	}
 	
-	if(aux)																/*if aux is not null, insert new url in stack*/
+	/*se aux non è nullo allora devo aggiornare url_stack del site_node 
+	  a cui l'url appartiene.*/
+	if(aux)
 	{
 		new_url->next_url = aux->url_stack;
 		aux->url_stack = new_url;
 	}
 
-	else {																/*if aux is null, create new stack to insert new url*/
+	/*se aux è nullo (ossia se il sito a cui l'url appartiene non ha un 
+	  suo stack) allora devo creare il site node (ricordo che site node è una coda).*/
+	else {
 		new_site = malloc(sizeof(site_node_t));
 		new_site->site_name = strdup(_site_name);
 		new_site->next_site = NULL;
 		new_site->url_stack = new_url;
-
 		new_site->depth = _depth;
-
+		/*il primo inserimento è ovviamente a parte (poiché aggiorna il 
+		  puntatore all'intera struttura)*/
 		if(prev)
 			prev->next_site = new_site;
 		else
@@ -63,11 +55,17 @@ char *get_url(site_node_t **_site_queue, int *_depth)
 	url_node_t *aux2;
 	char *url;
 	
-	/*a node can be delete from his stack only if there aren't other urla in this stack*/
+	/*un nodo della site queue non viene eliminato quando l'ultimo url del suo 
+	  stack viene estratto. L'eliminazione avverà alla get successiva. Questo 
+	  perché quell'ultima pagina estratta potrebbe contenere altri link allo 
+	  stesso sito.*/
+	
+	/*se il primo site_node della coda ha lo stack degli url vuoto, allora 
+	  seleziono il successivo (se non esiste ho finito tutti i link da visitare)*/
 	if((*_site_queue)->url_stack == NULL)
 	{
 		aux1 = *_site_queue;
-		*_site_queue = (*_site_queue)->next_site;						/*go to next node*/
+		*_site_queue = (*_site_queue)->next_site;
 		free(aux1->site_name);
 		free(aux1);
 		if(!(*_site_queue))
@@ -81,7 +79,7 @@ char *get_url(site_node_t **_site_queue, int *_depth)
 	*_depth = (*_site_queue)->depth;
 	free(aux2);
 	
-	printf("Parsing: %s\n", url);
+	printf("parsing: %s\n", url);
 
 	
 	return url;
@@ -129,16 +127,3 @@ int print_queue(site_node_t *_site_queue)
 
 	return 0;
 }
-
-/*
-This file is part of Phoneutria package.
-Writen by (alphabetic order)
-- Danilo Cantarella (https://github.com/Flyer-90);
-- Roberta Maccarrone (https://github.com/diarbuse);
-- Cristina Parasiliti Parracello (https://github.com/CryPara);
-- Filippo Randazzo (https://github.com/filirnd);
-- Dario Safarally (https://github.com/stormspeed);
-- Sebastiano Siragusa (https://github.com/sebysira);
-- Federico Vindigni (https://github.com/federicovindigni);
-Full Phoenutria is released by GPL3 licence.
-*/

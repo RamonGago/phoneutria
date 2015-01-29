@@ -1,21 +1,16 @@
-/*
-This file is part of Phoneutria package.
-Writen by (alphabetic order)
-- Danilo Cantarella (https://github.com/Flyer-90);
-- Roberta Maccarrone (https://github.com/diarbuse);
-- Cristina Parasiliti Parracello (https://github.com/CryPara);
-- Filippo Randazzo (https://github.com/filirnd);
-- Dario Safarally (https://github.com/stormspeed);
-- Sebastiano Siragusa (https://github.com/sebysira);
-- Federico Vindigni (https://github.com/federicovindigni);
-Full Phoenutria is released by GPL3 licence.
-*/
-
 #include "link_parser.h"
 
-int max_depth = 1;
+/*
+ * Estraggo tutto le lettere dell'url.
+ * Aggiungo entropia a questa stringa.
+ * Calcolo l'hash usando questa stringa.
+ * Do maggiore peso alle lettere del dominio.
+ * Faccio un hashing a a dizionario.
+ */
+
+int depth = 0;
 int file_index = 0;
-char seed_host[URL_MAX_LEN];
+char **seed_host;
 
 page_node_t *known_pages[HASH_SIZE];
 
@@ -27,30 +22,38 @@ url_info_t *get_url_info(char *_url, url_info_t *_url_info)
 	
 	url_len = strlen(_url);
 
-	i = j = has_domain = 0;						
-	if(strncasecmp(_url, "http://", 7) == 0)			/*obtain url domain from http:// to first '/' character */
+	/*
+	 *ottengo l'host_name di livello più basso ossia la stringa quello delimitata 
+	 *da http:// a destra e dal carattare / (o dalla fine dell'url) a sinistra
+	 */
+	i = j = has_domain = 0;
+	if(strncasecmp(_url, "http://", 7) == 0)
 		i = 7;
-	while(i < url_len && _url[i] != '/')				/*check url's characters until next '/' */
+	while(i < url_len && _url[i] != '/')
 	{
-		if(_url[i] == '.')								/*count number of dots in url*/
+		if(_url[i] == '.')
 			has_domain++;
-		_url_info->host_name[j++] = _url[i++];			/*cut http:// part*/
+		_url_info->host_name[j++] = _url[i++];
 	}
 	_url_info->host_name[j] = '\0';
 	
-	if(!has_domain)										/*if there is almost one domain*/
+	/*l'host_name deve avere almeno un dominio (quello di primo livello)*/
+	if(!has_domain)
 		return NULL;
 	
+	/*ottengo il path ossia tutto quello che viene nell'url dopo l'host_name*/
 	j = 0;
-	while(i < url_len)									/*obtain path from host_name*/
+	while(i < url_len)
 		_url_info->path[j++] = _url[i++];
 	if(j == 0)
 		_url_info->path[j++] = '/';
 	_url_info->path[j] = '\0';
 	
-	_url_info->file_ext[0] = '\0';						/*obtain page's extension*/
+	
+	/*ottengo l'estensione (se c'è) della pagina (per saltare css, js, etc.)*/
+	_url_info->file_ext[0] = '\0';
 	i = j = 0;
-	while(i < url_len)									/*search last '/' in url*/
+	while(i < url_len)
 		if(_url[i++] == '/')
 			j = i;
 	
@@ -65,21 +68,23 @@ url_info_t *get_url_info(char *_url, url_info_t *_url_info)
 		j = 0;
 		if(i > 0)
 		{
-			while(i < url_len && _url[i] != '?')		/*extract extension from url*/
+			while(i < url_len && _url[i] != '?')
 				_url_info->file_ext[j++] = _url[i++];
 		}
 		_url_info->file_ext[j] = '\0';
 	}
 	
-	i = strlen(_url_info->host_name) - 1;				/*obtain host_name's levels for dns*/
+	/*ottengo i vari livelli dell'host_name per il dns*/
+	i = strlen(_url_info->host_name) - 1;
 	
-	while(_url_info->host_name[i] != '.')				/*waste url's first level to obtain minimum url, like string.com*/
+	/*scarto il dominio di primo livello poichè l'url minimo è stringa.com*/
+	while(_url_info->host_name[i] != '.')
 		i--;
 	
 	j = k = 0;
 	while(j < i)
 	{
-		_url_info->subdomain[k++] = &(_url_info->host_name[j]); /*extract subdomain from url*/
+		_url_info->subdomain[k++] = &(_url_info->host_name[j]);
 		while(_url_info->host_name[j] != '.')
 			j++;
 		j++;
@@ -93,7 +98,7 @@ void init_hash_table()
 {
 	int i;
 	
-	for(i = 0; i < HASH_SIZE; i++)						/*init with NULL all table's cell*/
+	for(i = 0; i < HASH_SIZE; i++)
 		known_pages[i] = NULL;
 }
 
@@ -105,21 +110,21 @@ int get_hash(char *_url)
 	int i, j;
 	int url_len;
 	
-	if(strncasecmp(_url, "www", 3) == 0)				/*check if there is 'www' in url and cut it*/
+	if(strncasecmp(_url, "www", 3) == 0)
 		_url = &(_url[3]);
 	
 	url_len = strlen(_url);
 	
 	i = j = lp_index = 0;
-	while(i < url_len)									/*create hash string considering only characters between 'a' and 'z'*/
+	while(i < url_len)
 	{
 		if(_url[i] >= 'a' && _url[i] <= 'z')
 			hash_str[j++] = _url[i];
 		i++;
 	}
-	hash_str[j] = '\0';						
+	hash_str[j] = '\0';
 	
-	hash = hash_str[0] - 'a' + 1;						/*perform hash on hash string*/
+	hash = hash_str[0] - 'a' + 1;
 	hash *= hash_str[strlen(hash_str) - 1] - 'a' + 1;
 	hash *= hash_str[(strlen(hash_str) - 1) / 2] - 'a' + 1;
 	hash *= hash_str[(strlen(hash_str) - 1) / 4] - 'a' + 1;
@@ -132,10 +137,10 @@ page_node_t *create_node(char *_url, page_node_t *_next)
 {
 	page_node_t *node;
 
-	node = malloc(sizeof(page_node_t));					/*allocate memory to create a node*/
-	node->url = strdup(_url);							/*set url string*/
-	node->next = _next;									/*set next node*/
-
+	node = malloc(sizeof(page_node_t));
+	node->url = strdup(_url);
+	node->next = _next;
+	
 	return node;
 }
 
@@ -147,35 +152,39 @@ int is_known_page(char *_url)
 	page_node_t *prev;
 	page_node_t *new_node;
 	
-	hash = get_hash(_url);								/*obtain hash from url*/
+	hash = get_hash(_url);
 	
-	if(known_pages[hash] == NULL)						/*if hash table is empty, add firt node*/
+	/*se la entry è vuota inserisco il primo nodo*/
+	if(known_pages[hash] == NULL)
 	{
 		known_pages[hash] = create_node(_url, NULL);
 		return 0;
 	}
 	
-	/*if hash table is not empty, search node in collision list*/
-	aux = known_pages[hash]; 							/*current node*/
-	prev = NULL; 										/*support node to middle insert*/
+	/*altrimenti devo cercare nella lista di collisione*/
+	aux = known_pages[hash]; /*nodo corrente*/
+	prev = NULL; /*nodo di supporto per l'inserimento in mezzo alla lista*/
 	
-	while( aux != NULL && (res = strcmp(_url, aux->url)) > 0)	/*search insert's point in list*/
+	/*cerco il punto di inserimento dell'url nella lista*/
+	while( aux != NULL && (res = strcmp(_url, aux->url)) > 0)
 	{	
 		prev = aux;
 		aux = aux->next;
 	}
 
-	if(res == 0)										/*if url exist*/
+	/*se l'url esiste già*/
+	if(res == 0)
 		return 1;
-	
-	/*if url not exist, insert it in list*/
+
+	/*altrimenti lo devo inserire nella lista.
+	  ci sono tre casi di inserimento: in coda o nel mezzo (equivalenti) e in testa*/
 	if(aux == NULL || res < 0)
 	{
 		new_node = create_node(_url, aux);
-		if(prev != NULL)								/*insert in middle*/
+		if(prev != NULL)
 			prev->next = new_node;
 		else
-			known_pages[hash] = new_node;				/*insert in head*/
+			known_pages[hash] = new_node;
 		return 0;
 	}
 	
@@ -184,7 +193,8 @@ int is_known_page(char *_url)
 
 int file_ext_is_good(char *_file_ext)
 {
-	if(strlen(_file_ext) == 0 ||						/*check if extension's file is valid*/
+	if(strlen(_file_ext) == 0 ||
+		strlen(_file_ext) > 4 ||
 		strcmp(_file_ext, "html") == 0 ||
 		strcmp(_file_ext, "htm") == 0 ||
 		strcmp(_file_ext, "xhtml") == 0 ||
@@ -201,7 +211,7 @@ int file_ext_is_good(char *_file_ext)
 		return 0;
 }
 
-int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_query, int _num_query, int _page_depth)
+int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_query, int _num_query, int _page_depth, char **_seeds, int _num_seeds)
 {
 	char read_char;
 	char c;
@@ -210,35 +220,38 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	int is_href;
 	int is_query;
 	int index[_num_query];
+	//int query_len;
 	int i, j;
 	FILE *page;
 	char path[1000];
-
-	memset(path, '\0', 1000);							/*init path's memory*/
-	sprintf(path, "output/%d.txt", file_index++);			/*set output's path*/
-	page = fopen(path, "w");							/*open page's file in write mode*/
+	
+	memset(path, '\0', 1000);
+	sprintf(path, "dump/%d", file_index++);
+	page = fopen(path, "w");
 	
 	for(i = 0; i < _num_query; i++)
 		index[i] = 0;
-
+	
+	//query_len = strlen(_query);
 	is_http = is_https = is_href = is_query = i = 0;
-	while(read(_sock, &read_char, 1) > 0)				/*read from socket 1 character at time*/
+	while(read(_sock, &read_char, 1) > 0)
+	//while(recv_to(_sock, &read_char, 1, 0, 5000) > 0)
 	{
-		c = tolower(read_char);					
-		fputc(c, page);									/*put every character in page file*/
-
+		c = tolower(read_char);
+		fputc(c, page);
+		
+		/*mi sembra normale il fatto che la query non sia cercata negli url*/
 		for(j = 0; j < _num_query; j++)
 		{
-
-			if(c == _query[j][index[j]])				/*check if query word is contained in page*/
+			if(c == _query[j][index[j]])
 				index[j]++;
 			else
 				index[j] = 0;
-			if(index[j] == strlen(_query[j]))			/*if there is match*/
+			if(index[j] == strlen(_query[j]))
 				is_query++;
 		}
 		
-		if((c == 'h' && is_http == 0) ||				/*check if there is http:/ string*/
+		if((c == 'h' && is_http == 0) ||
 			(c == 't' && is_http == 1) ||
 			(c == 't' && is_http == 2) ||
 			(c == 'p' && is_http == 3) ||
@@ -246,11 +259,11 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 			(c == '/' && is_http == 5))
 			is_http++;
 		else if(c == '/' && is_http == 6)
-			spot_url(_sock, _site_queue, page, NULL, _page_depth);
+			spot_url(_sock, _site_queue, page, NULL, _page_depth, _seeds, _num_seeds);
 		else
 			is_http = 0;
 		
-		if((c == 'h' && is_https == 0) ||				/*check if there is https:/" string*/
+		if((c == 'h' && is_https == 0) ||
 			(c == 't' && is_https == 1) ||
 			(c == 't' && is_https == 2) ||
 			(c == 'p' && is_https == 3) ||
@@ -259,11 +272,11 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 			(c == '/' && is_https == 6))
 			is_https++;
 		else if(c == '/' && is_https == 7)
-			spot_url(_sock, _site_queue, page, NULL, _page_depth);
+			spot_url(_sock, _site_queue, page, NULL, _page_depth, _seeds, _num_seeds);
 		else
 			is_https = 0;
 		
-		if((c == 'h' && is_href == 0) ||				/*check if there is href=" string*/
+		if((c == 'h' && is_href == 0) ||
 			(c == 'r' && is_href == 1) ||
 			(c == 'e' && is_href == 2) ||
 			(c == 'f' && is_href == 3) ||
@@ -271,7 +284,7 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 			(c == '"' && is_href == 5) )
 			is_href++;
 		else if(c == '/' && is_href == 6)
-			spot_url(_sock, _site_queue, page, _host_name, _page_depth);
+			spot_url(_sock, _site_queue, page, _host_name, _page_depth, _seeds, _num_seeds);
 		else
 			is_href = 0;
 	}
@@ -283,7 +296,7 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	return 0;
 }
 
-int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name, int _page_depth)
+int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name, int _page_depth, char **_seeds, int _num_seeds)
 {
 	int i;
 	char c;
@@ -292,6 +305,7 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 	char url[URL_MAX_LEN];
 	char aux[URL_MAX_LEN];
 	url_info_t url_info;
+	int is_seed;
 
 	
 	url_info.host_name[0] = '\0';
@@ -299,23 +313,23 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 	url_info.file_ext[0] = '\0';
 	
 	has_domain = i = 0;
-	while(read(_sock, &read_char, 1) > 0)				/*read from socket 1 character at time*/
+	while(read(_sock, &read_char, 1) > 0)
+	//while(recv_to(_sock, &read_char, 1, 0, 5000) > 0)
 	{
 		c = tolower(read_char);
 		fputc(c, page);
 		
-		/*check if c is a valid url's character*/
 		if((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
 			c == '.' || c == '/' || c == '_' || c == '$' || c == ',' || c == '-' ||
 			c == ';' || c == '+' || c == '&' || c == '%' || c == '?' || c == '=' || c == ':')
 		{
-			url[i++] = c;								/*create url string*/
-			if(c == '.')								/*count number of domain*/
+			url[i++] = c;
+			if(c == '.')
 				has_domain++;
 		}
-		else											/*check if url is a good link*/
+		else
 		{
-			url[i] = '\0';					
+			url[i] = '\0';
 			if(_host_name)
 			{
 				strcpy(aux, url);
@@ -323,15 +337,19 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 				strcat(url, "/");
 				strcat(url, aux);
 			}
-			get_url_info(url, &url_info);				/*obtain url's information*/
+			get_url_info(url, &url_info);
 			if(i > 4 && (has_domain || _host_name) && file_ext_is_good(url_info.file_ext))
 			{
-				if(!is_known_page(url))					/*if url not exist in hash table*/
-				{
-					if(strcmp(seed_host, url_info.host_name) != 0 && (_page_depth + 1) <= max_depth)
-						add_url(_site_queue, url, url_info.host_name, _page_depth + 1);
-					else if(strcmp(seed_host, url_info.host_name) == 0)
+				if(!is_known_page(url))
+				{	
+					i = is_seed = 0;
+					while(i < _num_seeds && (is_seed = strcmp(_seeds[i], url_info.host_name)) != 0)
+						i++;
+						
+					if(is_seed == 0)
 						add_url(_site_queue, url, url_info.host_name, _page_depth);
+					else if((_page_depth + 1) <= depth)
+						add_url(_site_queue, url, url_info.host_name, _page_depth + 1);
 				}
 				has_domain = 0;
 			}
@@ -340,16 +358,3 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 	}
 	return 0;
 }
-
-/*
-This file is part of Phoneutria package.
-Writen by (alphabetic order)
-- Danilo Cantarella (https://github.com/Flyer-90);
-- Roberta Maccarrone (https://github.com/diarbuse);
-- Cristina Parasiliti Parracello (https://github.com/CryPara);
-- Filippo Randazzo (https://github.com/filirnd);
-- Dario Safarally (https://github.com/stormspeed);
-- Sebastiano Siragusa (https://github.com/sebysira);
-- Federico Vindigni (https://github.com/federicovindigni);
-Full Phoenutria is released by GPL3 licence.
-*/

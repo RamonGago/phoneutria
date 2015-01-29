@@ -1,19 +1,6 @@
-/*
-This file is part of Phoneutria package.
-Writen by (alphabetic order)
-- Danilo Cantarella (https://github.com/Flyer-90);
-- Roberta Maccarrone (https://github.com/diarbuse);
-- Cristina Parasiliti Parracello (https://github.com/CryPara);
-- Filippo Randazzo (https://github.com/filirnd);
-- Dario Safarally (https://github.com/stormspeed);
-- Sebastiano Siragusa (https://github.com/sebysira);
-- Federico Vindigni (https://github.com/federicovindigni);
-Full Phoenutria is released by GPL3 licence.
-*/
-
 #include "phoneutria.h"
 
-char *get_ip_addr(char *_host_name, char *_ip_addr)				/*obtain IP address from domain*/
+char *get_ip_addr(char *_host_name, char *_ip_addr)
 {
   struct hostent *host_info;
     
@@ -26,19 +13,20 @@ char *get_ip_addr(char *_host_name, char *_ip_addr)				/*obtain IP address from 
   return _ip_addr;
 }
 
-int create_socket(char *_host_name)								/*create socket for connection*/
+int create_socket(char *_host_name)
 {
 	char *server_ip;
 	int sock;
 	int retcode;
 	struct sockaddr_in server_addr;
+	struct timeval timeout;
 	
 	if((sock = socket(AF_INET,SOCK_STREAM, 0)) == -1)
 	{
 		printf("Error while creating the socket	\n");
 		exit(1);
 	}
-	server_addr.sin_family = AF_INET;							/*set IP's parameters*/
+	server_addr.sin_family = AF_INET;
 	server_ip = malloc(sizeof(char) * (IPV4_ADDR_LEN + 1));
 	if(get_ip_addr(_host_name, server_ip) == NULL)
 	{
@@ -46,20 +34,27 @@ int create_socket(char *_host_name)								/*create socket for connection*/
 		return -1;
 	}
 	inet_aton(server_ip, &server_addr.sin_addr);
-	server_addr.sin_port = htons(80);							/*set port*/
-	retcode = connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));		/*connect to address*/
+	server_addr.sin_port = htons(80);
+	retcode = connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
 	if(retcode == -1)
 	{
 		printf("Error while connecting to %s\n", server_ip);
 		free(server_ip);
 		return -1;
 	}
+      
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+        printf("setsockopt failed\n");
+	
 	free(server_ip);
 	
 	return sock;
 }
 
-int get_page(char *_seed, char **_query, int _num_query)
+int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 {
 	int sock;
 	char request[1024];
@@ -69,43 +64,48 @@ int get_page(char *_seed, char **_query, int _num_query)
 	int i;
 	int page_depth;
 	
-	url_info = malloc(sizeof(url_info_t));						/*allocate memory for struct url_info*/
+	url_info = malloc(sizeof(url_info_t));
 
-	site_queue = NULL;											/*init queue to store urls*/
+	site_queue = NULL;
+	seed_host = malloc(sizeof(char *) * (_num_seeds + 1));
+	seed_host[_num_seeds] = NULL;
 	
-	get_url_info(_seed, url_info);								/*call function to get url's information*/
-	is_known_page(_seed);
-	add_url(&site_queue, _seed, url_info->host_name, 0);		/*call function to add url into queue*/
-	get_url_info(_seed, url_info);
-	strcpy(seed_host, url_info->host_name);
-	
-	while(site_queue != NULL)									/*while there are urls in queue*/
+	for(i = 0; i < _num_seeds; i++)
 	{
-		url = get_url(&site_queue, &page_depth);				/*get url from queue*/
+		get_url_info(_seeds[i], url_info);
+		is_known_page(_seeds[i]);
+		add_url(&site_queue, _seeds[i], url_info->host_name, 0);
+		get_url_info(_seeds[i], url_info);
+		//strcpy(seed_host, url_info->host_name);
+		seed_host[i] = strdup(url_info->host_name);
+	}
+	
+	while(site_queue != NULL)
+	{
+		url = get_url(&site_queue, &page_depth);
 		if(url == NULL)
 		{
 			free(url_info);
 			return 0;
 		}
-
 		if(!get_url_info(url, url_info))
 			continue;
 		free(url);
 		
-		i = 0;													/*create socket for subdomain*/
+		i = 0;
 		while(url_info->subdomain[i] != NULL && (sock = create_socket(url_info->subdomain[i])) < 0)
 			i++;
 		
-		if(sock < 0)
-			continue;
-
-		memset(request, '\0', 1024);																	/*init request's memory*/
-		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);	/*prepare request string*/
-		write(sock, request, 1024);																		/*write request in socket*/
-		parse_page(sock, &site_queue, url_info->host_name, _query,_num_query, page_depth);				/*parse result from socket*/
-		close(sock);																					/*close socket*/
+		/*if(sock < 0)
+			continue;*/
+		memset(request, '\0', 1024);
+		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);
+		write(sock, request, 1024);
+		parse_page(sock, &site_queue, url_info->host_name, _query, _num_query, page_depth, _seeds, _num_seeds);
+		//print_queue(site_queue);
+		close(sock);
 	}
-	
+		
 	free(url_info);
 	free_queue(site_queue);
 	
@@ -114,30 +114,29 @@ int get_page(char *_seed, char **_query, int _num_query)
 
 int main(int argc, char **argv)
 {
-	char **query_words;
+	int i;
+	char **seeds, **keys;
+	int num_seeds, num_keys;
+	
+	init_hash_table();
 
-	if( argc < 3){
-		printf("Error: too few arguments!\n");
-		return 0;
-	}
-	mkdir("output/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);	/*create folder for output file*/
-
-	init_hash_table();											/*init hash table for collision avoidance*/
-	query_words = &argv[2];
- 	get_page(argv[1], query_words, argc - 2);					/*call function to start download and search process*/
-
+	num_seeds = num_keys = 0;
+	
+	seeds = &argv[1];
+	i = 1;
+	while(strcmp(argv[i++], "-d"));
+	
+	num_seeds = i - 2;
+	
+	/*extern defined in link_parser.h*/
+	depth = strtol(argv[i], NULL, 10);
+	
+	keys = &argv[i + 1];
+	num_keys = argc - i - 1;
+	
+	get_page(seeds, num_seeds, keys, num_keys);
+	
+	
+	
 	exit(0);
 }
-
-/*
-This file is part of Phoneutria package.
-Writen by (alphabetic order)
-- Danilo Cantarella (https://github.com/Flyer-90);
-- Roberta Maccarrone (https://github.com/diarbuse);
-- Cristina Parasiliti Parracello (https://github.com/CryPara);
-- Filippo Randazzo (https://github.com/filirnd);
-- Dario Safarally (https://github.com/stormspeed);
-- Sebastiano Siragusa (https://github.com/sebysira);
-- Federico Vindigni (https://github.com/federicovindigni);
-Full Phoenutria is released by GPL3 licence.
-*/
