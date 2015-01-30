@@ -8,7 +8,7 @@
  * Faccio un hashing a a dizionario.
  */
 
-int depth = 0;
+int sim_time = 0;
 int file_index = 0;
 int redir_cont = 0;
 
@@ -260,6 +260,7 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	int is_href;
 	int is_query;
 	int index[_num_query];
+	int found[_num_query];
 	int i, j;
 	FILE *page;
 	char path[1000];
@@ -270,10 +271,12 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	page = fopen(path, "w");
 	
 	read_line(_sock, response_line, URL_MAX_LEN); 
-	//printf("%s\n", response_line);
+	//printf(" ----- %s\n", response_line);
 	
-	if(!strstr(response_line, "200"))
+	/*if(!strstr(response_line, "200")){
+		remove(path);
 		return -1;
+	}*/
 	
 	/*if(redir_cont == 2)
 	{
@@ -284,8 +287,10 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	/*while(read(_sock, response_line, URL_MAX_LEN) > 0);
 		return 0;*/
 	
-	for(i = 0; i < _num_query; i++)
+	for(i = 0; i < _num_query; i++){
 		index[i] = 0;
+		found[i] = 0;
+	}
 
 	is_http = is_https = is_href = is_query = i = 0;
 	while(read(_sock, &read_char, 1) > 0)
@@ -296,12 +301,14 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 		/*mi sembra normale il fatto che la query non sia cercata negli url*/
 		for(j = 0; j < _num_query; j++)
 		{
-			if(c == _query[j][index[j]])
-				index[j]++;
+			if(c == _query[j][index[j]]) 
+				index[j]++; 
 			else
 				index[j] = 0;
-			if(index[j] == strlen(_query[j]))
-				is_query++;
+
+			if(index[j] == strlen(_query[j])){
+				found[j]=1;
+			}
 		}
 		
 		if((c == 'h' && is_http == 0) ||
@@ -342,10 +349,18 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 			is_href = 0;
 	}
 	fclose(page);
-	
+	//printf("num parole= %d - found %d", _num_query, found[0]);
+	if(_num_query == 1 && found[0] == 1)		//caso base con solo una parola come argomento
+		is_query = 1;	
+
+	for(j=1;j<_num_query;j++){
+		if(found[0]==1 && found[j]==1){
+			is_query=1;
+			break;
+		} 
+	}
 	if(!is_query)
 		remove(path);
-	
 	return 0;
 }
 
@@ -398,9 +413,9 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 					while(i < _num_seeds && (is_seed = strcmp(_seeds[i], url_info.host_name)) != 0)
 						i++;
 						
-					if(is_seed == 0)
+					if(is_seed == 0 && strlen(url) < 400)
 						add_url(_site_queue, url, url_info.host_name, _page_depth);
-					else if((_page_depth + 1) <= depth)
+					else if(strlen(url) < 400)
 						add_url(_site_queue, url, url_info.host_name, _page_depth + 1);
 				}
 				has_domain = 0;

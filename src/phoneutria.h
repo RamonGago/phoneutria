@@ -12,10 +12,12 @@
 #include <netdb.h>
 #include "link_parser.h"
 #include "url_stack.h"
+#include <time.h>
 
 #define IPV4_ADDR_LEN 15
 
 extern int h_errno; //needed by gethostbyname
+extern time_t start;
 
 char *get_ip_addr(char *_host_name, char *_ip_addr);
 int create_socket(char *_host_name);

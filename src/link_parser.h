@@ -25,7 +25,7 @@
 //#define HASH_SIZE 11881376 //26^5
 #define HASH_SIZE 1727604 //36^4+36^3+36^2+36
 
-extern int depth;
+extern int sim_time;
 
 typedef struct url_info_t
 {

@@ -1,5 +1,7 @@
 #include "phoneutria.h"
 
+time_t start;
+
 char *get_ip_addr(char *_host_name, char *_ip_addr)
 {
   struct hostent *host_info;
@@ -64,6 +66,7 @@ int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 	int i;
 	int page_depth;
 	char **seed_host;
+	time_t stop;
 	
 	url_info = malloc(sizeof(url_info_t));
 	seed_host = malloc(sizeof(char *) * _num_seeds);
@@ -101,6 +104,11 @@ int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 		parse_page(sock, &site_queue, url_info->host_name, _query, _num_query, page_depth, seed_host, _num_seeds);
 		//print_queue(site_queue);
 		close(sock);
+		stop = time(NULL);
+		if(stop-start > sim_time * 60) {
+			printf("Simulation completed! Exiting...\n");
+      		return 0;
+		}
 	}
 		
 	free(url_info);
@@ -116,6 +124,7 @@ int main(int argc, char **argv)
 	char **seeds, **keys;
 	int num_seeds, num_keys;
 	
+	
 	init_hash_table();
 	
 	if(!(dir = opendir("output")))
@@ -127,15 +136,17 @@ int main(int argc, char **argv)
 	
 	seeds = &argv[1];
 	i = 1;
-	while(strcmp(argv[i++], "-d"));
+	while(strcmp(argv[i++], "-t"));
 	
 	num_seeds = i - 2;
 	
 	/*extern defined in link_parser.h*/
-	depth = strtol(argv[i], NULL, 10);
+	sim_time = strtol(argv[i], NULL, 10);
 	
 	keys = &argv[i + 1];
 	num_keys = argc - i - 1;
+
+	start = time(NULL);
 	
 	get_page(seeds, num_seeds, keys, num_keys);
 	
