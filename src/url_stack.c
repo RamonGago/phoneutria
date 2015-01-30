@@ -1,5 +1,8 @@
 #include "url_stack.h"
 
+int spotted_pages = 0;
+float table_size = (HASH_SIZE * 16) / 1000000;
+
 int add_url(site_node_t **_top, char *_url, char *_site_name, int _depth)
 {
 	url_node_t *new_url;
@@ -44,7 +47,9 @@ int add_url(site_node_t **_top, char *_url, char *_site_name, int _depth)
 			*_top = new_site;
 	}
 
-	printf("spotted url: %s at depth: %d\n", _url, _depth);
+	spotted_pages++;
+	table_size += (16 + strlen(_url)) / 1000000;
+	printf("spotted url: %s at depth: %d\ntotal spotted pages: %d\ttable size: %.2f\n", _url, _depth, spotted_pages, table_size);
 	
 	return 0;
 }

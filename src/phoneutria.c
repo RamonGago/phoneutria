@@ -43,7 +43,7 @@ int create_socket(char *_host_name)
 		return -1;
 	}
       
-    timeout.tv_sec = 1;
+    timeout.tv_sec = 5;
     timeout.tv_usec = 0;
 
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
@@ -63,20 +63,17 @@ int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 	site_node_t *site_queue;
 	int i;
 	int page_depth;
+	char **seed_host;
 	
 	url_info = malloc(sizeof(url_info_t));
-
+	seed_host = malloc(sizeof(char *) * _num_seeds);
 	site_queue = NULL;
-	seed_host = malloc(sizeof(char *) * (_num_seeds + 1));
-	seed_host[_num_seeds] = NULL;
 	
 	for(i = 0; i < _num_seeds; i++)
 	{
 		get_url_info(_seeds[i], url_info);
 		is_known_page(_seeds[i]);
 		add_url(&site_queue, _seeds[i], url_info->host_name, 0);
-		get_url_info(_seeds[i], url_info);
-		//strcpy(seed_host, url_info->host_name);
 		seed_host[i] = strdup(url_info->host_name);
 	}
 	
@@ -101,7 +98,7 @@ int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 		memset(request, '\0', 1024);
 		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);
 		write(sock, request, 1024);
-		parse_page(sock, &site_queue, url_info->host_name, _query, _num_query, page_depth, _seeds, _num_seeds);
+		parse_page(sock, &site_queue, url_info->host_name, _query, _num_query, page_depth, seed_host, _num_seeds);
 		//print_queue(site_queue);
 		close(sock);
 	}
@@ -115,10 +112,16 @@ int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 int main(int argc, char **argv)
 {
 	int i;
+	DIR *dir;
 	char **seeds, **keys;
 	int num_seeds, num_keys;
 	
 	init_hash_table();
+	
+	if(!(dir = opendir("output")))
+		mkdir("output", S_IRWXU | S_IRWXG | S_IRWXO);
+	else 
+		closedir(dir);
 
 	num_seeds = num_keys = 0;
 	

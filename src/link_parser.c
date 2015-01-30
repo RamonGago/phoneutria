@@ -10,7 +10,7 @@
 
 int depth = 0;
 int file_index = 0;
-char **seed_host;
+int redir_cont = 0;
 
 page_node_t *known_pages[HASH_SIZE];
 
@@ -102,33 +102,44 @@ void init_hash_table()
 		known_pages[i] = NULL;
 }
 
+int get_val(char _c)
+{
+	if(_c >= 'a' && _c <= 'z')
+		return (_c - 'a' + 11);
+	else if(_c >= '0' && _c <= '9')
+		return (_c - '0' + 1);
+	return 0;
+}
+
 int get_hash(char *_url)
 {
 	int hash;
 	char hash_str[URL_MAX_LEN];
-	int lp_index;
-	int i, j;
 	int url_len;
+	int i, j;
 	
 	if(strncasecmp(_url, "www", 3) == 0)
 		_url = &(_url[3]);
 	
 	url_len = strlen(_url);
 	
-	i = j = lp_index = 0;
+	i = j = 0;
 	while(i < url_len)
 	{
-		if(_url[i] >= 'a' && _url[i] <= 'z')
+		if((_url[i] >= 'a' && _url[i] <= 'z') || (_url[i] >= '0' && _url[i] <= '9'))
 			hash_str[j++] = _url[i];
 		i++;
 	}
 	hash_str[j] = '\0';
 	
-	hash = hash_str[0] - 'a' + 1;
-	hash *= hash_str[strlen(hash_str) - 1] - 'a' + 1;
-	hash *= hash_str[(strlen(hash_str) - 1) / 2] - 'a' + 1;
-	hash *= hash_str[(strlen(hash_str) - 1) / 4] - 'a' + 1;
-	hash *= hash_str[((strlen(hash_str) - 1) * 3) / 4] - 'a' + 1;
+	hash = 0;
+	if(j > 3)
+	{
+		hash = get_val(hash_str[0]);
+		hash *= get_val(hash_str[j - 1]);
+		hash *= get_val(hash_str[(j - 1) / 4]);
+		hash *= get_val(hash_str[((j - 1) * 3) / 4]);
+	}
 	
 	return hash;
 }
@@ -211,6 +222,35 @@ int file_ext_is_good(char *_file_ext)
 		return 0;
 }
 
+int read_line(int _sock, char *_buf, int _buf_len)
+{
+	char read_char, c;
+	int line_len;
+	
+	line_len = 0;
+	memset(_buf, '\0', _buf_len);
+	
+	while(read(_sock, &read_char, 1) > 0)
+	{
+		c = tolower(read_char);
+		if(c == '\n')
+		{
+			_buf[line_len++] = '\0';
+			return line_len;
+		}
+		
+		_buf[line_len++] = c;
+		
+		if(line_len == _buf_len - 1)
+		{
+			_buf[line_len] = '\0';
+			return 0;
+		}
+	}
+	
+	return 0;
+}
+
 int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_query, int _num_query, int _page_depth, char **_seeds, int _num_seeds)
 {
 	char read_char;
@@ -223,26 +263,32 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	int i, j;
 	FILE *page;
 	char path[1000];
-	DIR *dir;
-	
+	char response_line[URL_MAX_LEN];	
 	
 	memset(path, '\0', 1000);
-	if(!(dir = opendir("output")))
-		mkdir("output", S_IRWXU | S_IRWXG | S_IRWXO);
-	else 
-		closedir(dir);
-	
-	
 	sprintf(path, "output/%d.txt", file_index++);
 	page = fopen(path, "w");
 	
+	read_line(_sock, response_line, URL_MAX_LEN); 
+	//printf("%s\n", response_line);
+	
+	if(!strstr(response_line, "200"))
+		return -1;
+	
+	/*if(redir_cont == 2)
+	{
+		redir_cont = 0;
+		return 0;
+	}*/
+	
+	/*while(read(_sock, response_line, URL_MAX_LEN) > 0);
+		return 0;*/
+	
 	for(i = 0; i < _num_query; i++)
 		index[i] = 0;
-	
-	//query_len = strlen(_query);
+
 	is_http = is_https = is_href = is_query = i = 0;
 	while(read(_sock, &read_char, 1) > 0)
-	//while(recv_to(_sock, &read_char, 1, 0, 5000) > 0)
 	{
 		c = tolower(read_char);
 		fputc(c, page);
@@ -321,7 +367,6 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 	
 	has_domain = i = 0;
 	while(read(_sock, &read_char, 1) > 0)
-	//while(recv_to(_sock, &read_char, 1, 0, 5000) > 0)
 	{
 		c = tolower(read_char);
 		fputc(c, page);

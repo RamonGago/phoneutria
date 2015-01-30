@@ -8,7 +8,7 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include "url_stack.h"
+#include <dirent.h>
 #include <netdb.h>
 #include "link_parser.h"
 #include "url_stack.h"

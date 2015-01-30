@@ -12,7 +12,6 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <dirent.h>
 #include "url_stack.h"
 
 
@@ -23,9 +22,9 @@
 #define FILE_EXT_MAX_LEN 10
 #define DOMAIN_MAX_LEVEL 10
 
-#define HASH_SIZE 11881376 //26^5
+//#define HASH_SIZE 11881376 //26^5
+#define HASH_SIZE 1727604 //36^4+36^3+36^2+36
 
-extern char **seed_host;
 extern int depth;
 
 typedef struct url_info_t

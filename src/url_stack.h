@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define HASH_SIZE 1727604
 
 #define URL_MAX_LEN 4096
 
