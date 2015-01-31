@@ -118,9 +118,6 @@ int get_hash(char *_url)
 	int url_len;
 	int i, j;
 	
-	if(strncasecmp(_url, "www", 3) == 0)
-		_url = &(_url[3]);
-	
 	url_len = strlen(_url);
 	
 	i = j = 0;
@@ -162,8 +159,18 @@ int is_known_page(char *_url)
 	page_node_t *aux;
 	page_node_t *prev;
 	page_node_t *new_node;
+
+	if(strncasecmp(_url, "http://", 7) == 0)
+		_url = &(_url[7]);
+
+	if(strncasecmp(_url, "https://", 8) == 0)
+		_url = &(_url[8]);
+
+	if(strncasecmp(_url, "www.", 4) == 0)
+		_url = &(_url[4]);
 	
 	hash = get_hash(_url);
+	//printf("prendo l'url %s  e trovo hash %d \n", _url, hash);
 	
 	/*se la entry è vuota inserisco il primo nodo*/
 	if(known_pages[hash] == NULL)
@@ -264,13 +271,15 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	int i, j;
 	FILE *page;
 	char path[1000];
-	char response_line[URL_MAX_LEN];	
+	//char response_line[URL_MAX_LEN];	
 	
 	memset(path, '\0', 1000);
 	sprintf(path, "output/%d.txt", file_index++);
 	page = fopen(path, "w");
+
+	fprintf(page, "%s %d\n", _host_name, _page_depth);
 	
-	read_line(_sock, response_line, URL_MAX_LEN); 
+	//read_line(_sock, response_line, URL_MAX_LEN); 
 	//printf(" ----- %s\n", response_line);
 	
 	/*if(!strstr(response_line, "200")){
@@ -396,7 +405,10 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 		}
 		else
 		{
-			url[i] = '\0';
+			if(url[i-1] == '/') 
+				url[i-1] = '\0';
+			else
+				url[i] = '\0';
 			if(_host_name)
 			{
 				strcpy(aux, url);
@@ -413,9 +425,9 @@ int spot_url(int _sock, site_node_t **_site_queue, FILE *page, char *_host_name,
 					while(i < _num_seeds && (is_seed = strcmp(_seeds[i], url_info.host_name)) != 0)
 						i++;
 						
-					if(is_seed == 0 && strlen(url) < 400)
+					if(is_seed == 0 && strlen(url) < URL_VALID_MAX_LEN)
 						add_url(_site_queue, url, url_info.host_name, _page_depth);
-					else if(strlen(url) < 400)
+					else if(strlen(url) < URL_VALID_MAX_LEN)
 						add_url(_site_queue, url, url_info.host_name, _page_depth + 1);
 				}
 				has_domain = 0;

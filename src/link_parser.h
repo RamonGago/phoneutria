@@ -16,6 +16,7 @@
 
 
 #define URL_MAX_LEN 4096
+#define URL_VALID_MAX_LEN 400
 
 #define HOST_MAX_LEN 300
 #define FILE_PATH_MAX_LEN 3786
