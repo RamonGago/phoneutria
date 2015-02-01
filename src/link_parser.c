@@ -258,7 +258,7 @@ int read_line(int _sock, char *_buf, int _buf_len)
 	return 0;
 }
 
-int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_query, int _num_query, int _page_depth, char **_seeds, int _num_seeds)
+int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char * _path_name, char **_query, int _num_query, int _page_depth, char **_seeds, int _num_seeds)
 {
 	char read_char;
 	char c;
@@ -277,7 +277,7 @@ int parse_page(int _sock, site_node_t **_site_queue, char *_host_name, char **_q
 	sprintf(path, "output/%d.txt", file_index++);
 	page = fopen(path, "w");
 
-	fprintf(page, "%s %d\n", _host_name, _page_depth);
+	fprintf(page, "%s%s %d\n", _host_name, _path_name, _page_depth);
 	
 	//read_line(_sock, response_line, URL_MAX_LEN); 
 	//printf(" ----- %s\n", response_line);

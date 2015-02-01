@@ -75,7 +75,7 @@ int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 	for(i = 0; i < _num_seeds; i++)
 	{
 		if(strncasecmp(_seeds[i], "http://", 7) == 0)
-		_seeds[i] = &(_seeds[i][7]);
+			_seeds[i] = &(_seeds[i][7]);
 
 		if(strncasecmp(_seeds[i], "www.", 4) == 0)
 			_seeds[i] = &(_seeds[i][4]);
@@ -108,7 +108,7 @@ int get_page(char **_seeds, int _num_seeds, char **_query, int _num_query)
 		sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url_info->path, url_info->host_name);
 		//printf("RICHIESTA %s\n", request);
 		write(sock, request, 1024);
-		parse_page(sock, &site_queue, url_info->host_name, _query, _num_query, page_depth, seed_host, _num_seeds);
+		parse_page(sock, &site_queue, url_info->host_name, url_info->path, _query, _num_query, page_depth, seed_host, _num_seeds);
 		//print_queue(site_queue);
 		close(sock);
 		stop = time(NULL);
